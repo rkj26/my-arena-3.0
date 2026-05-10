@@ -73,7 +73,7 @@ fi
 # git config --global user.email cal.s.mcdougall@gmail.com
 
 # --- Install Python deps from primary repo ---
-PRIMARY_REPO_DIR="ARENA_3.0"
+PRIMARY_REPO_DIR="my-arena-3.0"
 echo "=== Installing Python dependencies from $PRIMARY_REPO_DIR ==="
 cd "$PRIMARY_REPO_DIR"
 pip install -U pip setuptools wheel
