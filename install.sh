@@ -68,4 +68,61 @@ source ~/miniconda3/etc/profile.d/conda.sh
 
 # --- Accept conda TOS ---
 echo "=== Accepting Conda TOS ==="
-conda tos accept --
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# --- Create and activate conda env ---
+echo "=== Creating conda env '$CONDA_ENV' (python $PYTHON_VERSION) ==="
+conda create -n "$CONDA_ENV" python="$PYTHON_VERSION" -y
+conda activate "$CONDA_ENV"
+echo "=== Active Python: $(which python) ==="
+
+# --- Install Python deps ---
+echo "=== Installing Python dependencies ==="
+pip install -U pip setuptools wheel
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+else
+    echo "Warning: requirements.txt not found!"
+fi
+conda install -n "$CONDA_ENV" ipykernel --update-deps --force-reinstall -y
+
+# --- Register Conda environment with JupyterLab ---
+echo "=== Registering Conda environment with JupyterLab ==="
+python -m ipykernel install --user --name="$CONDA_ENV" --display-name="Python (arena-env)"
+
+# Move back to the parent directory if we stepped into the repo earlier
+if [ "$WAS_OUTSIDE" = true ]; then
+    cd ..
+fi
+
+# --- Optional Extra Context Repo ---
+if $CLONE_LLM_CONTEXT; then
+    REPO="callummcdougall/arena-llm-context"
+    BRANCH="main"
+    if [ ! -d "arena-llm-context" ]; then
+        echo "=== Cloning $REPO (branch: $BRANCH) ==="
+        git clone -b "$BRANCH" "https://github.com/${REPO}.git"
+    else
+        echo "=== $REPO already cloned ==="
+    fi
+fi
+
+# --- VS Code workspace settings ---
+echo "=== Configuring VS Code workspace settings ==="
+HOME_DIR="$HOME"
+mkdir -p "$HOME_DIR/.vscode"
+cat > "$HOME_DIR/.vscode/settings.json" << EOF
+{
+    "python.defaultInterpreterPath": "$HOME_DIR/miniconda3/envs/$CONDA_ENV/bin/python",
+    "python.analysis.extraPaths": [
+        "$HOME_DIR/$PRIMARY_REPO_DIR/chapter0_fundamentals/exercises",
+        "$HOME_DIR/$PRIMARY_REPO_DIR/chapter1_transformer_interp/exercises",
+        "$HOME_DIR/$PRIMARY_REPO_DIR/chapter2_rl/exercises",
+        "$HOME_DIR/$PRIMARY_REPO_DIR/chapter3_llm_evals/exercises",
+        "$HOME_DIR/$PRIMARY_REPO_DIR/chapter4_alignment_science/exercises"
+    ]
+}
+EOF
+
+echo "=== Setup Done! ==="
