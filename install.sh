@@ -34,16 +34,28 @@ done
 
 echo "=== Setup: platform=$PLATFORM, clone_llm_context=$CLONE_LLM_CONTEXT ==="
 
-# --- Install Git & System Packages First ---
+# --- Install Git, Tmux & System Packages First ---
 echo "=== Installing system packages ==="
 if [[ "$PLATFORM" == "runpod" ]]; then
-    apt update && apt install -y git curl wget
+    apt update && apt install -y git curl wget tmux tar
 elif [[ "$PLATFORM" == "vastai" ]]; then
-    sudo apt update && sudo apt install -y git curl wget
+    sudo apt update && sudo apt install -y git curl wget tmux tar
+fi
+
+# --- Install Standalone VS Code CLI for Tunnelling ---
+echo "=== Downloading and installing VS Code CLI ==="
+mkdir -p ~/.local/bin
+curl -Lk "https://code.visualstudio.com/sha/download?build=stable&os=cli-alpine-x64" --output /tmp/vscode_cli.tar.gz
+tar -xf /tmp/vscode_cli.tar.gz -C ~/.local/bin
+rm -f /tmp/vscode_cli.tar.gz
+export PATH="$HOME/.local/bin:$PATH"
+
+# Ensure PATH update persists for user logins
+if ! grep -q '\.local/bin' ~/.bashrc; then
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 fi
 
 # --- Ensure Primary Repo Exists ---
-# If we aren't already inside the repo directory, and it doesn't exist, clone it.
 if [[ "$(basename "$PWD")" != "$PRIMARY_REPO_DIR" ]]; then
     if [ ! -d "$PRIMARY_REPO_DIR" ]; then
         echo "=== Cloning primary repo: $PRIMARY_REPO_DIR ==="
@@ -126,3 +138,15 @@ cat > "$HOME_DIR/.vscode/settings.json" << EOF
 EOF
 
 echo "=== Setup Done! ==="
+echo ""
+echo "========================================================================="
+echo "                  LAUNCHING VS CODE SECURE TUNNEL                        "
+echo "========================================================================="
+echo "1. Follow the authentication prompts displayed on-screen below."
+echo "2. Authenticate using your personal GitHub or Microsoft account details."
+echo "3. Once confirmed, use the outputted link to access the environment."
+echo "========================================================================="
+echo ""
+
+# Launch the interactive tunnel connection process directly
+code tunnel --accept-server-license-terms
